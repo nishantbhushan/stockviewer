@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+      google.charts.load('current', {'packages':['corechart']});
+      google.charts.setOnLoadCallback(drawChart);
+
+      function drawChart() {
+        // Create the data table for the chart
+        var data = new google.visualization.DataTable();
+        data.addColumn('string', 'Month');
+        data.addColumn('number', 'Quantity Type 1');
+        data.addColumn('number', 'Quantity Type 2');
+        data.addColumn('number', 'Cost Type 1');
+        data.addColumn('number', 'Cost Type 2');
+        data.addRows([
+            ['Jan', 10, 20, 100, 200],
+            ['Feb', 15, 25, 150, 250],
+            ['Mar', 20, 30, 200, 300],
+            ['Apr', 25, 35, 250, 350],
+            ['May', 30, 40, 300, 400]
+        ]);
+
+        // Set the chart options
+        var options = {
+            title: 'Quantity and Cost of Clothes Purchased by Month',
+            isStacked: true,
+            legend: {position: 'top', maxLines: 3},
+            hAxis: {
+            title: 'Month',
+            minValue: 0
+            },
+            vAxes: {
+            // Adds titles to each axis.
+            0: {title: 'Quantity'},
+            1: {title: 'Cost'}
+            },
+            series: {
+            // Use the second axis for the cost columns
+            3: {targetAxisIndex: 1},
+            4: {targetAxisIndex: 1}
+            }
+        };
+
+        // Create the chart object and specify the container ID
+        var chart = new google.visualization.ColumnChart(document.getElementById('chart-container'));
+
+        // Draw the chart
+        chart.draw(data, options);
+        }
+    </script>
+
+</head>
+<body>
+    <div id="chart-container"></div>
+</body>
+</html>
