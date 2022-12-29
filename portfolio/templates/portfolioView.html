@@ -1,122 +1,136 @@
-<!DOCTYPE html>
-<html lang="en">
-  <style>
-    /* Your CSS styles go here */
-    .container {
-      display: flex;
-      justify-content: space-between;
+
+ {% extends "base.html" %}
+ {% load customFilters %}
+
+ {% block content %}
+ <style>
+  .chartContainer {
+    width: 500px;
+    height: 500px;
+    border: 1px solid black;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+  .chartBox {
+    border: 1px solid black;
+    flex-grow: 1;
+  }
+</style>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
+
+
+<script type="text/javascript">
+  google.charts.load('current', {'packages':['bar','corechart']});
+  google.charts.setOnLoadCallback(drawChart);
+
+  function drawChart() {
+    if ({{nulldata}}==1) {
+      console.log('null data')
+      return;
     }
-  </style>
+    console.log('not null data')
+
+    if ({{stockPerformanceChartData|length}} >0) {
+    var stockPerformanceChartData = new google.visualization.arrayToDataTable(
+        [[{% for key in stockPerformanceChartData.0 %}'{{ key }}',{% endfor %}],
+        {% for row in stockPerformanceChartData %}
+        [{% for value in row.values %}{{ value|djangoDataToJs|safe }},{% endfor %}],
+        {% endfor %}
+        ]
+    );
+    console.log(stockPerformanceChartData)
+
+    var stockPerformanceChartOptions = {
+      title: 'Stock Performance',
+      hAxis: {title: 'Date',  titleTextStyle: {color: '#333'}},
+      // vAxis: {minValue: 0},
+      series: {
+        0: {targetAxisIndex: 0},
+        1: {targetAxisIndex: 1},
+        2: {targetAxisIndex: 1}
+      },
+      vAxes: {
+        // Adds titles to each axis.
+        0: {title: 'Quantity', },
+        1: {title: 'Value and Cost'}
+      }
+    };
+
+    var stockPerformanceChart = new google.visualization.AreaChart(document.getElementById('area_chart_div'));
+    stockPerformanceChart.draw(stockPerformanceChartData, stockPerformanceChartOptions);
+
+    };
+
+    if ({{stockHistoryChartData|length}} >0) {
+
+
+    var stockHistoryChartData = new google.visualization.arrayToDataTable(
+      [[{% for key in stockHistoryChartData.0 %}'{{ key }}',{% endfor %}],
+        {% for row in stockHistoryChartData %}
+        [{% for value in row.values %}{{ value|djangoDataToJs|safe }},{% endfor %}],
+        {% endfor %}
+        ]
+    );
+    console.log(stockHistoryChartData)
+
+    stockHistoryChartData.setColumnProperty(1,'role','annotation');
+    stockHistoryChartData.setColumnProperty(2,'role','data');
+    stockHistoryChartData.setColumnProperty(3,'role','data');
+
+   
+    var stockHistoryChartOptions = {
+      bars: 'vertical',
+      isStacked: true,
+      legend: { position: 'top', maxLines: 3 },
+      seriesType: 'bars',
+      hAxis: {
+        title: 'Purchase Date'
+      }, 
+      series: {
+        0: {targetAxisIndex: 0},
+        1: {targetAxisIndex: 1},
+      }
+    };
+
+    var stockHistoryChart = new google.visualization.ComboChart(document.getElementById('portfolio_columnchart_material'));
+    stockHistoryChart.draw(stockHistoryChartData, stockHistoryChartOptions);
+  };
+
+  if ({{tickerData|length}} > 0) {
+    
+    var tickerData = new google.visualization.arrayToDataTable(
+      [[{% for key in tickerData.0 %}'{{ key }}',{% endfor %}],
+        {% for row in tickerData %}
+        [{% for value in row.values %}{{ value|djangoDataToJs|safe }},{% endfor %}],
+        {% endfor %}
+        ]
+    );
+
+    var tickerDataOptions = {
+          title: 'Stock Performance',
+          hAxis: {title: 'Date',  titleTextStyle: {color: '#333'}},
+          vAxis: {minValue: 0}
+        };
+
+    var tickerDatachart = new google.visualization.AreaChart(document.getElementById('ticker_area_chart'));
+    tickerDatachart.draw(tickerData, tickerDataOptions);
+
+    console.log(tickerData);
+
+  };
+
+   
+
+  }
+
   
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+</script>
 
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-    <script type="text/javascript">
-      google.charts.load('current', {'packages':['bar','corechart']});
-      google.charts.setOnLoadCallback(drawChart);
-
-      function drawChart() {
-        if ({{nulldata}}==1) {
-          console.log('null data')
-          return;
-        }
-        console.log('not null data')
-        var data = new google.visualization.DataTable();
-      	data.addColumn('date', 'Date');
-        data.addColumn('number', 'Quantity');
-      	data.addColumn('number', 'Cost');
-        data.addColumn('number', 'Value');
-
-        var chartData = new google.visualization.DataTable();
-        chartData.addColumn('date','Date');
-        chartData.addColumn('string','Stock');
-        chartData.addColumn('number', 'Quantity',{targetAxisIndex: 0});
-        chartData.addColumn('number','Cost',{targetAxisIndex: 1});
-
-        chartData.setColumnProperty(1,'role','annotation');
-        chartData.setColumnProperty(2,'role','data');
-        chartData.setColumnProperty(3,'role','data');
-
-        chartData.addRows([
-         {% for rowdata in portfolioData %}
-             [new Date('{{rowdata.datePurchased|date:"Y-m-d"}}'),'{{rowdata.ticker}}',{{rowdata.quantity}},{{rowdata.costBasis}}],
-          {% endfor %}
-        ]);
-        
-         data.addRows([
-         {% for rowdata in chartdata %}
-             [new Date('{{rowdata.date|date:"Y-m-d"}}'),{{rowdata.cumQuantity}},{{rowdata.cumCost}},{{rowdata.cumValue}}],
-          {% endfor %}
-        
-        // [new Date(2001,9,5),2,4,5],
-      	]);
-
-        var options = {
-          bars: 'vertical',
-          // isStacked: true,
-          legend: { position: 'top', maxLines: 3 },
-          seriesType: 'bars',
-          hAxis: {
-            title: 'Purchase Date'
-          }, 
-          series: {
-            0: {targetAxisIndex: 0},
-            1: {targetAxisIndex: 1},
-          }
-        };
-
-        var chart = new google.visualization.ComboChart(document.getElementById('portfolio_columnchart_material'));
-        chart.draw(chartData, options);
-
-
-        var Areaoptions = {
-          title: 'Company Performance',
-          // hAxis: {title: 'Date',  titleTextStyle: {color: '#333'}},
-          // vAxis: {minValue: 0},
-          series: {
-            0: {targetAxisIndex: 0},
-            1: {targetAxisIndex: 1},
-            2: {targetAxisIndex: 1}
-          },
-          vAxes: {
-            // Adds titles to each axis.
-            0: {title: 'Sales', },
-            1: {title: 'Quantity'}
-          }
-        };
-
-        var areachart = new google.visualization.AreaChart(document.getElementById('area_chart_div'));
-        areachart.draw(data, Areaoptions);
-        
-        function showNoDataDiv(data) {
-          if (data.length === 0) {
-              document.getElementById('no-data-div').style.display = 'block';
-              document.getElementById('no-data-div').innerHTML = 'No data found';
-          } else {
-              document.getElementById('no-data-div').style.display = 'none';
-          }
-      }
-    console.log(data.length);
-      }
-
-      
-    </script>
-    
-
-
-
-</head>
-<body>
-    
-    <h1 class="title">This is my portfolio</h1>
+<h1 class="title">This is my portfolio</h1>
     <div class="listofbuttons">
-      <form  method="get">
+      <form  method="POST">
         {% csrf_token %}
         {% for  key, value in chartTimeOptions.items %}
             <button type="submit" name="timeOption" value="{{ key }}">{{ value }}</button>
@@ -124,20 +138,41 @@
       </form>
       
     {{ request.get_full_path }}
+
+    <div style="display: flex; flex-wrap: wrap;">
+      <div style="width: 200px; height: 50px; background-color: red; font-weight: bold;font-size: 200%;">{{var_value}} %</div>
+      <div style="width: 200px; height: 50px; background-color: green; font-weight: bold;font-size: 200%;">{{var_cost}} %</div>
+      {% if var_price %}
+      <div style="width: 200px; height: 50px; background-color: blue; font-weight: bold;font-size: 200%;">{{var_price}} %</div>
+      {% endif %}
     </div>
-    <div class="container">
-      <div class="left" id="portfolio_columnchart_material" style="width: 800px; height: 500px;">
-        <div id="no-data-div" style="display: none;">
-          No data found
-      </div>
-      </div>
-      <div class="right"  id="area_chart_div" style="width: 800px; height: 500px;"></div>
-      
+
+    {{min_value}}
+    {{max_value}}
+    {{min_cost}}
+    {{max_cost}}
+    {{min_price}}
+    {{max_price}}
+    </div>
+    <div class="ChartContainer">
+      {% if tickerName %}
+       <div class="chartBox" id="ticker_area_chart"></div>
+      {% endif %}
+      {% if stockHistoryChartData %}
+       <div class="chartBox" id="portfolio_columnchart_material"></div>
+      {% endif %}
+      {% if stockPerformanceChartData %}
+       <div class="chartBox" id="area_chart_div"></div>
+      {% endif %}
+           
     </div>
    
-
+    <div>
+      stockHistoryChartData = {{stockHistoryChartData|length}}
+      stockPerformanceChartData = {{stockPerformanceChartData|length}}
+    </div>
     
-
+    {% if portfolioData %}
     <table>
       <thead>
         <tr>
@@ -150,6 +185,7 @@
         </tr>
       </thead>
       <tbody>
+        
         {% for portfolio in portfolioData %}
           <tr>
             <td> <a href="{% url 'portfolio-ticker-view' portfolio.ticker %}" >{{portfolio.ticker}}</a></td>
@@ -160,35 +196,13 @@
             <td> {{portfolio.country}}</td>
           </tr>
         {% endfor %}
+        
       </tbody>
     </table>
-        
-        <p> <form method="POST" id ="abcd">
-            {% csrf_token %}
-            <input type="hidden" name="newstock" value="yes">
-            <input type="submit" value="Add new Stock" >
-    </form>
-               
-    </p>
+    {% endif %}
+    <div>
+      <a href="add/" class="button">Add new Stock</a>
+    </div> 
     
-    <script>
-      $('.timeOptionButton').click(function() {
-        var key = $(this).data('key');
-        console.log('Button clicked ')
-        console.log(key)
-        $.ajax({
-          url:  '{{ request.path }}',
-          type: 'GET',
-          data: {
-            'timeOption': key
-          },
-          success: function(response) {
-            // Handle the response from the view
-            location.reload();
-          }
-        });
-      });
-    </script>
-    
-</body>
-</html>
+ {% endblock content %}
+ 
